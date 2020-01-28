@@ -1,7 +1,9 @@
 import bisect
 import logging
 import os
+import shutil
 
+import csv_utils
 import gl_utils
 from picoflexx.royale import RoyaleReplayDevice
 from picoflexx.royale.rrf_utils import RrfHelper
@@ -34,7 +36,24 @@ class Picoflexx_Player_Plugin(PicoflexxCommon):
             ))
             return
 
-        meta_info = self.g_pool.meta_info
+        fn_picoflexx_info = os.path.join(self.g_pool.rec_dir, "info_picoflexx.csv")
+        fn_old_info = os.path.join(self.g_pool.rec_dir, "info.old_style.csv")
+        fn_info = os.path.join(self.g_pool.rec_dir, "info.csv")
+        if not os.path.exists(fn_picoflexx_info):
+            # Migrate from sharing info.json with Pupil recorder, to using our own csv file
+            if os.path.exists(fn_old_info):
+                shutil.copy(fn_old_info, fn_picoflexx_info)
+                logger.info("Copying {!r} to {!r}".format(fn_old_info, fn_picoflexx_info))
+            elif os.path.exists(fn_info):
+                shutil.copy(fn_info, fn_picoflexx_info)
+                logger.info("Copying {!r} to {!r}".format(fn_info, fn_picoflexx_info))
+            else:
+                self.gl_display = self._abort
+                logger.error("Failed to migrate Picoflexx recording info!.")
+                return
+
+        with open(fn_picoflexx_info, 'r') as f:
+            meta_info = csv_utils.read_key_value_file(f)
         self.offset = float(meta_info.get('Royale Timestamp Offset', 0))
 
         cloud_path = os.path.join(self.g_pool.rec_dir, 'pointcloud.rrf')

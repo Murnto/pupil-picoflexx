@@ -236,6 +236,8 @@ class Picoflexx_Source(PicoflexxCommon, Playback_Source, Base_Source):
             self._recording_directory = notification["rec_path"]
             self._recording_reconnection_count = 0
 
+            self.save_recording_metadata(self._recording_directory)
+
             self.start_pointcloud_recording(self._recording_directory)
         elif notification["subject"] == "recording.stopped":
             # Re-enable the "Record RRF" and the Usecase drop down now that
@@ -246,10 +248,6 @@ class Picoflexx_Source(PicoflexxCommon, Playback_Source, Base_Source):
                 self._ui_usecase.read_only = False
 
             self.stop_pointcloud_recording()
-
-            # Append some information about plugin settings to info.csv in the
-            # recording.
-            self.append_recording_metadata(notification["rec_path"])
 
             self._recording_directory = None
 
@@ -424,8 +422,8 @@ class Picoflexx_Source(PicoflexxCommon, Playback_Source, Base_Source):
     def intrinsics(self, model):
         logger.error("Picoflexx backend does not support setting intrinsics manually")
 
-    def append_recording_metadata(self, rec_path):
-        meta_info_path = os.path.join(rec_path, "info.csv")
+    def save_recording_metadata(self, rec_path):
+        meta_info_path = os.path.join(rec_path, "info_picoflexx.csv")
 
         with open(meta_info_path, "a", newline="") as csvfile:
             csv_utils.write_key_value_file(
